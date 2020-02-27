@@ -1,40 +1,70 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useRouteMatch } from 'react-router-dom';
-import MovieCard from './MovieCard';
+import React from "react";
+import axios from "axios";
+import MovieCard from "./MovieCard";
+import MovieUpdate from './MovieUpdate'
 
-function Movie({ addToSavedList }) {
-  const [movie, setMovie] = useState(null);
-  const match = useRouteMatch();
+export default class Movie extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      movie: null
+    };
+  }
 
-  const fetchMovie = id => {
+  componentDidMount() {
+    this.fetchMovie(this.props.match.params.id);
+  }
+
+  componentWillReceiveProps(newProps) {
+    if (this.props.match.params.id !== newProps.match.params.id) {
+      this.fetchMovie(newProps.match.params.id);
+    }
+  }
+
+  fetchMovie = id => {
     axios
       .get(`http://localhost:5000/api/movies/${id}`)
-      .then(res => setMovie(res.data))
+      .then(res => this.setState({ movie: res.data }))
       .catch(err => console.log(err.response));
   };
 
-  const saveMovie = () => {
-    addToSavedList(movie);
+  saveMovie = () => {
+    const addToSavedList = this.props.addToSavedList;
+    addToSavedList(this.state.movie);
   };
 
-  useEffect(() => {
-    fetchMovie(match.params.id);
-  }, [match.params.id]);
+  handleUpdate = e => {
+    e.preventDefault();
+    this.props.history.push(`/update-movie/${this.state.movie.id}`);
+  };
 
-  if (!movie) {
-    return <div>Loading movie information...</div>;
+  handleDelete = () => {
+    console.log(this.state.movie)
+    axios.delete(`http://localhost:5000/api/movies/${this.state.movie.id}`)
+    .then(res => {
+      console.log('this is delete res',res.data)
+      this.props.history.push('')
+    })
   }
 
-  return (
-    <div className='save-wrapper'>
-      <MovieCard movie={movie} />
+  render() {
+    if (!this.state.movie) {
+      return <div>Loading movie information...</div>;
+    }
 
-      <div className='save-button' onClick={saveMovie}>
-        Save
+    return (
+      <div className="save-wrapper">
+        <MovieCard movie={this.state.movie} />
+        <div className="save-button" onClick={this.saveMovie}>
+          Save
+        </div>
+        <div className="delete-button" onClick={this.handleDelete}>
+          Delete
+        </div>
+        <div className="update-button" onClick={this.handleUpdate}>
+          Update
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
-
-export default Movie;
